@@ -13,7 +13,7 @@ class Seq2SeqVAE():
         self.input = tf.placeholder_with_default(tf.ones(shape=[FLAGS.batch_size,FLAGS.max_len],dtype=tf.int32),shape=[FLAGS.batch_size,FLAGS.max_len],)
         embedded,matrix = self.embed_sentances(self.input)
         #encoded = DenseNetEncoder(_input=embedded, growth_rate=4, num_blocks=3, layers_per_batch=5)
-        #encoded =tf.contrib.layers.fully_connected(tf.squeeze(encoded,axis=1),num_outputs=FLAGS.hidden1)
+
         encoded =self.encoder(embedded,None)
         deocder_logits= self.simple_decoder(encoded,)
         self.preds_op = self.preds(deocder_logits)
@@ -50,8 +50,8 @@ class Seq2SeqVAE():
     def simple_decoder(self,encoded):
         with tf.variable_scope("rnn_decoder") as scope:
             outputs =[]
-
-            cell = GRUCell(num_units=FLAGS.hidden1)
+            encoded = tf.contrib.layers.fully_connected(encoded, num_outputs=FLAGS.hidden2)
+            cell = GRUCell(num_units=FLAGS.hidden2)
             state = encoded
             next_input = encoded
             for step in range(FLAGS.max_len):
