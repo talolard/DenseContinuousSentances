@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 from data.preprocess import  DataLoader
 from models.baseline_conv_enc import BaselineConvEncDec
+from models.seq2seqvae import Seq2SeqVAE
 from utils import print_paramater_count
 
 
@@ -20,7 +21,7 @@ def main(__):
 
 
     DP = DataLoader()
-    model = BaselineConvEncDec()
+    model = Seq2SeqVAE()
     print_paramater_count()
     init = tf.global_variables_initializer()
     with MonitoredTrainingSession(

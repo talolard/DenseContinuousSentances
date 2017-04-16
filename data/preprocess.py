@@ -6,7 +6,7 @@ import codecs
 import collections
 from six.moves import cPickle as pickle
 from arg_getter import FLAGS
-PAD_TOKEN = chr(1)
+PAD_TOKEN = chr(128)
 class DataLoader():
     def __init__(self):
         self.padding = [0 for _ in range(FLAGS.max_len)]
