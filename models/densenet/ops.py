@@ -45,6 +45,7 @@ def bottleneck(_input, growthRate):
 
     return output
 
+
 def addInternalLayer(_input, growth_rate, bottle=False):
     # notice that there is a 3x3 convolution at the beginning
     compOut = composite_function(_input, growth_rate, width=3)

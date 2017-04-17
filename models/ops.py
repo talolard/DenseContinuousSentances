@@ -11,17 +11,18 @@ def conv1d(x,outputsize,width):
     return convolved
 
 
-def conv1d_transpose(x,targetHidden,width):
+def conv1d_transpose(x,targetHidden,width,growth_rate):
     length,inputHidden = x.get_shape()[-2:]
-    growth_rate=FLAGS.max_len
     outputShape = [FLAGS.batch_size,1,length.value*growth_rate,targetHidden]
     while len(x.get_shape() ) <4:
         x = tf.expand_dims(x, axis=1)
-    bias = tf.get_variable("conv_filter", shape=[targetHidden])
-    filter_ = tf.get_variable("conv_bias",shape=[1,width,targetHidden,inputHidden])
+    bias = tf.get_variable("deconv_filter", shape=[targetHidden])
+    filter_ = tf.get_variable("deconv_bias",shape=[1,width,targetHidden,inputHidden])
     conv_trans = tf.nn.conv2d_transpose(x,filter=filter_,output_shape=outputShape,strides=[1,1,growth_rate,1])
     conv_trans +=bias
     conv_trans =ln(conv_trans)
+    conv_trans =tf.nn.relu(conv_trans)
+    conv_trans = tf.squeeze(conv_trans,1)
     return conv_trans
 
 

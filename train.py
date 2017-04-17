@@ -12,6 +12,7 @@ from models.seq2seqvae import Seq2SeqVAE
 from utils import print_paramater_count
 
 
+
 def main(__):
     #    label, inputs, lengths = prepareInputsBatch(FLAGS.batch_size)
     train_dir = os.path.join(FLAGS.save_dir,"train","results")
@@ -21,7 +22,7 @@ def main(__):
 
 
     DP = DataLoader()
-    model = Seq2SeqVAE()
+    model = BaselineConvEncDec()
     print_paramater_count()
     init = tf.global_variables_initializer()
     with MonitoredTrainingSession(
