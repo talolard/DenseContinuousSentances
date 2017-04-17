@@ -18,9 +18,9 @@ def avg_pool1d(_input, k):
 
 def composite_function(_input,outSize,width):
     with tf.variable_scope("composite_function"):
-        output = ln(_input)
+        output = conv1d(_input,outSize,width=width)
+        output = ln(output)
         output = tf.nn.relu(output)
-        output = conv1d(output,outSize,width=width)
         output = tf.nn.dropout(output,keep_prob=FLAGS.dropout_keep_prob)
     return output
 
@@ -28,17 +28,17 @@ def conv1d(x, outSize, width):
     inputSize = x.get_shape()[-1]
     filter_ = tf.get_variable("conv_filter", shape=[width, inputSize, outSize])
     convolved = tf.nn.conv1d(x,filters=filter_,stride=1,padding="SAME")
-    convolved =ln(convolved)
     return convolved
 def bottleneck(_input, growthRate):
     '''
     Per the paper, each bottlneck outputs 4k feature size where k is the growth rate of the network.
     :return:
     '''
-    output = ln(_input)
-    output =tf.nn.relu(output)
     outSize = growthRate * 4
-    output = conv1d(output,outSize,width=1)
+    output = conv1d(_input,outSize,width=1)
+    output = ln(output)
+    output =tf.nn.relu(output)
+
     return output
 
 def addInternalLayer(_input,growth_rate):
@@ -67,11 +67,11 @@ def transition_to_vector(_input):
     '''
     Transforms the last block into a single vector by avg_pooling
     '''
-    output =ln(_input)
+    last_pool_kernel = int(_input.get_shape()[-2])
+    output = avg_pool1d(_input,last_pool_kernel)
+    output =ln(output)
     output = tf.nn.relu(output)
-    last_pool_kernel = int(output.get_shape()[-2])
-    output = avg_pool1d(output,last_pool_kernel)
-    #output = tf.squeeze(output,axis=1)
+
     return output
 
 
