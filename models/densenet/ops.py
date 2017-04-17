@@ -70,21 +70,21 @@ def makeBlock(_input,growth_rate,num_layers,bottle=False):
     return output
 
 def transition_layer(_input,reduction=1):
-    outSize = int(int(_input.get_shape()[-1]) * reduction)
-    output = composite_function(_input,outSize,width=1)
-    # output = avg_pool1d(output,2)
+    out_size = int(int(_input.get_shape()[-1]) * reduction)
+    output = composite_function(_input,out_size,width=1)
+    output = avg_pool1d(output,2)
     return output
 
 def transition_to_vector(_input):
     '''
     Transforms the last block into a single vector by avg_pooling
     '''
-    # output =ln(_input)
-    # output = tf.nn.relu(output)
-    # last_pool_kernel = int(output.get_shape()[-2])
-    # output = avg_pool1d(output,last_pool_kernel)
-    # output = tf.squeeze(output,axis=1)
-    return _input
+    output =ln(_input)
+    output = tf.nn.relu(output)
+    last_pool_kernel = int(output.get_shape()[-2])
+    output = avg_pool1d(output,last_pool_kernel)
+    output = tf.squeeze(output,axis=1)
+    return output
 
 
 
