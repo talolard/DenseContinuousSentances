@@ -45,7 +45,7 @@ def addInternalLayer(_input,growth_rate):
 
     compOut = composite_function(_input,growth_rate,width=3)
     output = tf.concat([_input,compOut],axis=2)
-    output = bottleneck(output,growth_rate)
+    #output = bottleneck(output,growth_rate)
     return output
 
 def makeBlock(_input,growth_rate,num_layers,bottle=True):

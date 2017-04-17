@@ -5,6 +5,7 @@ from tensorflow.contrib.layers.python.layers.regularizers import l1_regularizer
 from tensorflow.contrib.rnn.python.ops.core_rnn_cell_impl import GRUCell
 
 from data.preprocess import DataLoader
+from models.densenet.densenet_decoder import DenseNetDecoder
 from models.ops import conv1d ,conv1d_transpose,nonlin_ln
 from arg_getter import FLAGS
 import numpy as np
@@ -18,7 +19,7 @@ class BaselineConvEncDec():
         self.input = tf.placeholder_with_default(tf.ones(shape=[FLAGS.batch_size,FLAGS.max_len],dtype=tf.int32),shape=[FLAGS.batch_size,FLAGS.max_len],)
         embedded = self.embed_sentances(self.input)
         encoded = DenseNetEncoder(_input=embedded, growth_rate=4, num_blocks=3, layers_per_batch=5)
-        decoded = self.rnn_decoder(encoded,embedded)
+        decoded = DenseNetDecoder(encoded,layers_per_batch=3,growth_rate=16,expansion_rate=2)
         logits = self.to_logits(decoded)
         self.preds_op = self.preds(logits)
         self.loss_op = self.loss(self.input,logits)
@@ -60,31 +61,19 @@ class BaselineConvEncDec():
         state = encoded
         next_input = cell.zero_state(FLAGS.batch_size,dtype=tf.float32)
         outputs =[]
-        embedded = tf.contrib.layers.fully_connected(embedded_input,num_outputs=FLAGS.hidden1)
-        emb_list = tf.unstack(embedded,axis=1)
 
         with tf.variable_scope("rnn_decoder") as scope:
-            for step,inp in enumerate(emb_list):
+            for step in range(FLAGS.max_len):
                 if step >0:
                     scope.reuse_variables()
-                next_input = (next_input+inp)/2
                 next_input,state = cell(next_input,state)
                 outputs.append(next_input)
         outputs = tf.stack(outputs,axis=1)
         return outputs
     def decoder(self,encoded_sentance):
 
-        layer_num =0
-        with tf.variable_scope("upsaple{}".format(layer_num),initializer=xavier_initializer()):
-            next_input = conv1d_transpose(encoded_sentance, 16, 4)  # [batch_size,1,hidden] =>[bs,h,1,2]
-            tf.summary.histogram("upsaple_act_{}".format(layer_num), next_input)
-            layer_num +=1
-        decoded = next_input
-        decoded = tf.squeeze(decoded,axis=1)
-        with tf.variable_scope("decoder_dense"):
-            dense_decoded = densenet_ops.makeBlock(decoded,4,5)
-        return dense_decoded
-
+        decoded = DenseNetDecoder(encoded_sentance,3,4)
+        return decoded
     def encoded_to_latent(self,encoded):
         hidden = tf.contrib.layers.fully_connected(encoded,num_outputs=FLAGS.hidden2*2,activation_fn=tf.nn.softplus)
         mean =  tf.contrib.layers.fully_connected(hidden,num_outputs=FLAGS.hidden2,activation_fn=None)
