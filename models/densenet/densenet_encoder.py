@@ -17,5 +17,5 @@ def DenseNetEncoder(_input, num_blocks, layers_per_batch, growth_rate, bottle=Fa
             else:
                 output = ops.transition_to_vector(output)
 
-    output = tf.squeeze(output)
+    #output = tf.squeeze(output)
     return output

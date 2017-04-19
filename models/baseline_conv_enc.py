@@ -18,8 +18,8 @@ class BaselineConvEncDec():
 
         self.input = tf.placeholder_with_default(tf.ones(shape=[FLAGS.batch_size,FLAGS.max_len],dtype=tf.int32),shape=[FLAGS.batch_size,FLAGS.max_len],)
         embedded = self.embed_sentances(self.input)
-        encoded = DenseNetEncoder(_input=embedded, growth_rate=4, num_blocks=3, layers_per_batch=5)
-        decoded = DenseNetDecoder(encoded,layers_per_batch=3,growth_rate=16,expansion_rate=2)
+        encoded = DenseNetEncoder(_input=embedded, growth_rate=16, num_blocks=3, layers_per_batch=5)
+        decoded = DenseNetDecoder(encoded,layers_per_batch=5,growth_rate=16,expansion_rate=2)
         logits = self.to_logits(decoded)
         self.preds_op = self.preds(logits)
         self.loss_op = self.loss(self.input,logits)
