@@ -7,12 +7,14 @@ import collections
 from six.moves import cPickle as pickle
 from arg_getter import FLAGS
 import random
+import string
 PAD_TOKEN = chr(128)
 class DataLoader():
     def __init__(self):
         self.padding = [0 for _ in range(256)]
         self.vocab_path = os.path.join(FLAGS.data_dir,"voab.pkl")
         self.train_path = os.path.join(FLAGS.data_dir, "train")
+        self.printable_set = set(string.printable)
         if os.path.exists(self.vocab_path):
 
             with open(self.vocab_path,"rb") as f:
@@ -24,6 +26,9 @@ class DataLoader():
             self.load_data()
         FLAGS.vocab_size = len(self.vocab)
         self.reverse_vocab = {val:key for key,val in self.vocab.items()}
+    def is_pure_ascii(self,s):
+        chars = set(s)
+        return len(chars.difference(self.printable_set)) ==0
     def num_to_str(self,nums):
         return ''.join(map(self.reverse_vocab.get,nums))
     def to_encoded_array(self, s):
@@ -41,8 +46,9 @@ class DataLoader():
             end +=FLAGS.batch_size
     def load_data(self):
         with open(FLAGS.input_file) as f:
-            txt = f.read()
-            sentances =txt.splitlines()
+            sentances = f.readlines()
+            sentances =list(filter(self.is_pure_ascii,sentances))
+            txt =''.join(sentances)
             vocab = set(txt)
             vocab = {char:num+1 for num,char in enumerate(vocab)}
             vocab[PAD_TOKEN] =0

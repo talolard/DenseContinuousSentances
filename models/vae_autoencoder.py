@@ -12,10 +12,16 @@ class VAE(BaselineConvEncDec):
         embedded = self.embed_sentances(self.input)
         encoded = DenseNetEncoder(_input=embedded, growth_rate=16, num_blocks=3, layers_per_batch=5)
         normed_encoded,kl_loss = self.to_normed_vec(encoded)
-        decoded = DenseNetDecoder(encoded,layers_per_batch=5,growth_rate=4,expansion_rate=2)
+        with tf.variable_scope("dec_scope") as scope:
+            decoded = DenseNetDecoder(normed_encoded,layers_per_batch=5,growth_rate=4,expansion_rate=2)
+            scope.reuse_variables()
+            rand = tf.random_normal([FLAGS.batch_size,FLAGS.hidden2], name='random_draw')
+            generated = DenseNetDecoder(rand,layers_per_batch=5,growth_rate=4,expansion_rate=2)
+            self.generated_preds = self.preds(generated)
+
+
         logits = self.to_logits(decoded)
         kl_weight = 1.0- tf.train.exponential_decay(1.0,global_step=self.gs,decay_steps=100000,decay_rate=0.999)
-        kl_weight =0
         self.preds_op = self.preds(logits)
         self.loss_op = self.loss(self.input,logits)
         kl_loss =tf.reduce_sum(kl_loss)
