@@ -19,7 +19,7 @@ class BaselineConvEncDec():
         self.input = tf.placeholder_with_default(tf.ones(shape=[FLAGS.batch_size,FLAGS.max_len],dtype=tf.int32),shape=[FLAGS.batch_size,FLAGS.max_len],)
         embedded = self.embed_sentances(self.input)
         encoded = DenseNetEncoder(_input=embedded, growth_rate=16, num_blocks=3, layers_per_batch=5)
-        decoded = DenseNetDecoder(encoded,layers_per_batch=5,growth_rate=16,expansion_rate=2)
+        decoded = DenseNetDecoder(encoded,layers_per_batch=5,growth_rate=4,expansion_rate=2)
         logits = self.to_logits(decoded)
         self.preds_op = self.preds(logits)
         self.loss_op = self.loss(self.input,logits)
@@ -89,20 +89,29 @@ class BaselineConvEncDec():
         loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=targets,logits=logits)
         return tf.reduce_mean(loss)
     def train(self,loss,gs):
-        optimizer = tf.train.AdamOptimizer(FLAGS.learning_rate)
+        optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
         gvs = optimizer.compute_gradients(loss)
-        train_op = optimizer.apply_gradients(gvs,gs)
+        capped_gvs =[]
+        for grad, var in gvs:
+            cliped_grad =(tf.clip_by_value(grad, -0.1, 0.1))
+            capped_gvs.append((cliped_grad, var))
+            if not "LayerNorm" in var.name and not "layer_weight" in var.name:
+                (tf.summary.histogram(var.name + '/gradient', grad))
+
+        train_op = optimizer.apply_gradients(capped_gvs,gs)
 
         return train_op
 
     @staticmethod
     def make_gradient_summaries(loss):
-        with tf.name_scope("gradients"):
-            grads = tf.gradients(loss, tf.trainable_variables())
-            grads = list(zip(grads, tf.trainable_variables()))
-            grad_summaries = []
-            for grad, var in grads:
-                if not "LayerNorm" in var.name and not "layer_weight" in var.name:
-                    grad_summaries.append(tf.summary.histogram(var.name + '/gradient', grad))
-            return grad_summaries
+        pass
+        #
+        # with tf.name_scope("gradients"):
+        #     grads = tf.gradients(loss, tf.trainable_variables())
+        #     grads = list(zip(grads, tf.trainable_variables()))
+        #     grad_summaries = []
+        #     for grad, var in grads:
+        #         if not "LayerNorm" in var.name and not "layer_weight" in var.name:
+        #             grad_summaries.append(tf.summary.histogram(var.name + '/gradient', grad))
+        #     return grad_summaries
 
