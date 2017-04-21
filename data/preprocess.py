@@ -38,7 +38,7 @@ class DataLoader():
     def get_batch(self):
         start =0
         end =start + FLAGS.batch_size
-        random.shuffle(self.data)
+        np.random.shuffle(self.data)
         while end < len(self.data):
             batch = self.data[start:end]
             yield batch[:,:FLAGS.max_len]
