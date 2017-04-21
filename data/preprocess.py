@@ -6,10 +6,11 @@ import codecs
 import collections
 from six.moves import cPickle as pickle
 from arg_getter import FLAGS
+import random
 PAD_TOKEN = chr(128)
 class DataLoader():
     def __init__(self):
-        self.padding = [0 for _ in range(FLAGS.max_len)]
+        self.padding = [0 for _ in range(256)]
         self.vocab_path = os.path.join(FLAGS.data_dir,"voab.pkl")
         self.train_path = os.path.join(FLAGS.data_dir, "train")
         if os.path.exists(self.vocab_path):
@@ -25,35 +26,30 @@ class DataLoader():
         self.reverse_vocab = {val:key for key,val in self.vocab.items()}
     def num_to_str(self,nums):
         return ''.join(map(self.reverse_vocab.get,nums))
-    def to_padded_array(self,s):
+    def to_encoded_array(self, s):
         enumerated = list(map(self.vocab.get,s))
-        padded = (enumerated +self.padding)[:FLAGS.max_len]
+        padded = (enumerated +self.padding)[:256]
         return np.array(padded)
     def get_batch(self):
         start =0
         end =start + FLAGS.batch_size
+        random.shuffle(self.data)
         while end < len(self.data):
             batch = self.data[start:end]
-            yield batch
+            yield batch[:,:FLAGS.max_len]
             start =end
             end +=FLAGS.batch_size
     def load_data(self):
         with open(FLAGS.input_file) as f:
             txt = f.read()
+            sentances =txt.splitlines()
             vocab = set(txt)
             vocab = {char:num+1 for num,char in enumerate(vocab)}
             vocab[PAD_TOKEN] =0
             self.vocab  =vocab
             with open(self.vocab_path,"wb") as f:
                 pickle.dump(self.vocab,f)
-            start =0
-            end = FLAGS.max_len
-            sentances =[]
-            while end <len(txt) + FLAGS.max_len:
-                sentances.append(txt[start:end])
-                start+=FLAGS.max_len
-                end += FLAGS.max_len
-            data = list(map(self.to_padded_array,sentances))
+            data = list(map(self.to_encoded_array, sentances))
             self.data =np.stack(data)
             np.save(self.train_path,self.data)
 
