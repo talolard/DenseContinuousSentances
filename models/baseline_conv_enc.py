@@ -85,20 +85,21 @@ class BaselineConvEncDec():
     def to_logits(self,decoded):
         with tf.variable_scope("logits",):
             return linear(decoded,num_outputs=FLAGS.vocab_size,)
-    def loss(self,targets,logits):
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=targets,logits=logits)
-        return tf.reduce_mean(loss)
+    def loss(self,targets,logits,mask):
+
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=targets,logits=logits,)
+        return tf.reduce_mean(loss*mask)
     def train(self,loss,gs):
         optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
         gvs = optimizer.compute_gradients(loss)
         capped_gvs =[]
         for grad, var in gvs:
-            cliped_grad =(tf.clip_by_value(grad, -0.1, 0.1))
-            capped_gvs.append((cliped_grad, var))
+            # cliped_grad =(tf.clip_by_value(grad, -0.1, 0.1))
+            # capped_gvs.append((cliped_grad, var))
             if not "LayerNorm" in var.name and not "layer_weight" in var.name:
-                (tf.summary.histogram(var.name + '/gradient', grad))
+                (tf.summary.scalar(var.name + '/gradient', tf.norm(grad,)))
 
-        train_op = optimizer.apply_gradients(capped_gvs,gs)
+        train_op = optimizer.minimize(loss,gs)
 
         return train_op
 

@@ -23,7 +23,9 @@ class VAE(BaselineConvEncDec):
         logits = self.to_logits(decoded)
         kl_weight = 1.0- tf.train.exponential_decay(1.0,global_step=self.gs,decay_steps=100000,decay_rate=0.999)
         self.preds_op = self.preds(logits)
-        self.loss_op = self.loss(self.input,logits)
+        mask_len = tf.reduce_sum(tf.sign(self.input),1)
+        mask = tf.sequence_mask(mask_len,FLAGS.max_len,dtype=tf.float32)
+        self.loss_op = self.loss(self.input,logits,mask)
         kl_loss =tf.reduce_sum(kl_loss)
         total_loss  = self.loss_op+kl_weight*kl_loss
         tf.summary.scalar("loss",self.loss_op)
@@ -36,12 +38,14 @@ class VAE(BaselineConvEncDec):
         self.summaries = tf.summary.merge_all()
 
     def to_normed_vec(self,latent):
-        mu = tf.contrib.layers.linear(latent,num_outputs=FLAGS.hidden2)
+        temp = tf.contrib.layers.fully_connected(latent,num_outputs=FLAGS.hidden2*2,activation_fn=tf.nn.tanh)
+        mu,sig= tf.split(temp,2,1)
         sig = tf.contrib.layers.linear(latent,num_outputs=FLAGS.hidden2)
         epsilon = tf.random_normal(tf.shape(sig), name='epsilon')
         std =  tf.exp(0.5 * sig)
         z = mu+tf.multiply(std,epsilon)
-        kl_loss =  -0.5 * tf.reduce_sum(1 + sig - tf.pow(mu, 2) - tf.exp(sig), reduction_indices=1)
+        kl_term =1 + sig - tf.pow(mu, 2) - tf.exp(sig)
+        kl_loss =  -0.5 * tf.reduce_mean(kl_term, reduction_indices=1)
         return z,kl_loss
 
 
